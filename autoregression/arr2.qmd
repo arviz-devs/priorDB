@@ -4,7 +4,7 @@ title: ARR2
 
 # Description
 
-The ARR2 prior [@kohnsARR2PriorFlexible2024a] is a global-local shrinkage prior for autoregressive models. It adapts the R2-D2 prior [@zhangBayesianRegressionUsing2022a] to the time-series setting by placing a joint prior on the autoregressive coefficients and their induced $R^2$. Compared to other priors for time-series models, the ARR2 prior allows for flexible and interpretable shrinkage: the user can encode prior beliefs about the overall explanatory power of the lagged outcomes (via $R^2$) and about the relative importance of each lag (via the simplex proportions $\psi$).
+The ARR2 prior [@kohnsARR2PriorFlexible2024a] is a global-local shrinkage prior for autoregressive models. It adapts the R2-D2 prior [@zhangBayesianRegressionUsing2022a] to the time-series setting by placing a joint prior on the autoregressive coefficients and their induced $R^2$. Compared to other priors for time-series models, the ARR2 prior allows for flexible and interpretable shrinkage: the user can encode prior information about the overall explanatory power of the lagged outcomes (via $R^2$) and about the relative importance of each lag (via the simplex proportions $\psi$).
 
 # Definition
 
