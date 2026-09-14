@@ -2,28 +2,33 @@ import numpy as np
 import pymc as pm
 import pytensor.tensor as pt
 
-# Assume y is your observed time series
-# Construct lag matrix for AR(p) model
+
+# Specify the order of the autoregressive model and the observed data
 p = 2
-T = len(y)
-var_y = np.var(y, ddof=1)
-ys = y[p:]
-Y_lag = np.stack([y[p - k : T - k] for k in range(1, p + 1)], axis=1)
+y_data = np.array([...])  # Replace with your actual time series data
 
 # Hyperparameters for the ARR2 prior
-cons = np.full(p, 1.0)
-mean_R2 = 0.5
-prec_R2 = 10.0
+cons = 0.1 * np.ones(p)
+mean_R2 = 1 / 3
+prec_R2 = 3
+
+# Scale to make HalfNormal have unit variance
+HALFNORMAL_SCALE = 1 / np.sqrt(1 - 2 / np.pi)
 
 with pm.Model() as model:
-    sigma = pm.HalfStudentT("sigma", nu=3, sigma=2.5 * np.sqrt(var_y))
+    sigma = pm.HalfNormal("sigma", HALFNORMAL_SCALE)
 
     zb = pm.Normal("zb", mu=0.0, sigma=1.0, shape=p)
     psi = pm.Dirichlet("psi", a=cons)
     R2 = pm.Beta("R2", mu=mean_R2, nu=prec_R2)
 
     tau2 = R2 / (1 - R2)
-    phi = pm.Deterministic("phi", zb * pt.sqrt(sigma**2 / var_y * tau2 * psi))
+    phi = pm.Deterministic("phi", zb * (sigma / y_data.std()) * pt.sqrt(tau2 * psi))
 
-    mu = Y_lag @ phi
-    pm.Normal("y_obs", mu=mu, sigma=sigma, observed=ys)
+    pm.AR(
+        "obs",
+        phi,
+        np.sqrt(2) * sigma,
+        init_dist=pm.Normal.dist(0, 1, shape=p),
+        observed=y_data,
+    )
