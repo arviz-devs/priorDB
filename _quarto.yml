@@ -5,8 +5,8 @@ project:
 website:
   title: "priorDB"
   description: "A collaborative database of models and their priors" 
-  site-url: https://n-kall.github.io/priorDB/
-  repo-url: https://github.com/n-kall/priorDB
+  site-url: https://arviz-devs.github.io/priorDB/
+  repo-url: https://github.com/arviz-devs/priorDB
   repo-actions: [source, issue]
   page-navigation: true
   sidebar:
