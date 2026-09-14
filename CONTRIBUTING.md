@@ -6,7 +6,7 @@ By contributing to PriorDB, you agree that your contributions will be licensed u
 
 ## Reporting issues
 
-If you encounter any error or typo in PriorDB, please report an issue to our [issue tracker](https://github.com/n-kall/PriorDB/issues). Please check if the issue has already been reported before creating a new one. 
+If you encounter any error or typo in PriorDB, please report an issue to our [issue tracker](https://github.com/arviz-devs/PriorDB/issues). Please check if the issue has already been reported before creating a new one. 
 
 ## Fixing issues and contributing new content
 
