@@ -965,44 +965,11 @@
     "text": "LFO-CV comparison"
   },
   {
-    "objectID": "autoregression/arr2.html#description",
-    "href": "autoregression/arr2.html#description",
+    "objectID": "autoregression/arr2.html",
+    "href": "autoregression/arr2.html",
     "title": "ARR2",
-    "section": "Description",
-    "text": "Description\nDeveloped by (Kohns et al. 2024), it is similar to the R2-D2 prior (Zhang et al. 2022) but for autoregression.",
-    "crumbs": [
-      "Autoregression",
-      "ARR2"
-    ]
-  },
-  {
-    "objectID": "autoregression/arr2.html#definition",
-    "href": "autoregression/arr2.html#definition",
-    "title": "ARR2",
-    "section": "Definition",
-    "text": "Definition\n\\[\n\\begin{align*}\n\\phi_i &\\sim \\text{normal}\\left(0, \\frac{\\sigma^2}{\\sigma_{y}^2}\\tau^2\\psi_i\\right) \\\\\n\\tau^2 &= \\frac{R^2}{1 - R^2} \\\\\nR^2 &\\sim \\text{beta}(\\mu_R,\\sigma_R) \\\\\n\\psi &\\sim \\text{Dirichlet}(\\xi_1,\\dotsc,\\xi_p) \\\\\n\\sigma^2 &\\sim p(\\sigma^2) \\\\\n\\end{align*}\n\\]",
-    "crumbs": [
-      "Autoregression",
-      "ARR2"
-    ]
-  },
-  {
-    "objectID": "autoregression/arr2.html#things-to-specify",
-    "href": "autoregression/arr2.html#things-to-specify",
-    "title": "ARR2",
-    "section": "Things to specify",
-    "text": "Things to specify\n\nPrior on \\(\\sigma^2\\)\n\\(\\xi_1 \\dotsc \\xi_p\\) (concentration parameters corresponding to lag coefficients)\n\\(\\mu_R\\) and \\(\\sigma_R\\) (location and precision of \\(R^2\\) prior",
-    "crumbs": [
-      "Autoregression",
-      "ARR2"
-    ]
-  },
-  {
-    "objectID": "autoregression/arr2.html#stan-code",
-    "href": "autoregression/arr2.html#stan-code",
-    "title": "ARR2",
-    "section": "Stan code",
-    "text": "Stan code\ndata {\n  int&lt;lower=1&gt; T; // number of time points\n  vector[T] Y; // observations\n  int&lt;lower=0&gt; p; // AR order\n  // concentration vector of the Dirichlet prior\n  vector&lt;lower=0&gt;[p] cons;\n  // data for the R2D2 prior\n  real&lt;lower=0&gt; mean_R2;  // mean of the R2 prior\n  real&lt;lower=0&gt; prec_R2;  // precision of the R2 prior\n  real&lt;lower=0&gt; sigma_sd; // sd of sigma prior\n  // variance estimates of y\n  real&lt;lower=0&gt; var_y;\n}\n\nparameters {\n  vector[p] phi; // AR coefficients\n  simplex[p] psi; // decomposition simplex\n  real&lt;lower=0, upper=1&gt; R2; // coefficient of determination\n  real&lt;lower=0&gt; sigma; // observation model sd\n}\n\ntransformed parameters {\n  real&lt;lower=0&gt; tau2 = R2 / (1 - R2); // Equation 18\n  vector[T] mu = rep_vector(0.0, T);\n  for (t in (p+1):T) {\n    for (i in 1:p) {\n      mu[t] += phi[i] * Y[t-i]; // Equation 16\n    }\n  }\n}\n\nmodel {\n  // priors\n  phi ~ normal(0, sqrt(sigma^2/var_y * tau2 * psi));  // Equation 17\n  R2 ~ beta(mean_R2 * prec_R2, (1 - mean_R2) * prec_R2);  // Equation 19\n  sigma ~ normal(0, sigma_sd);  // Equation 20\n  psi ~ dirichlet(cons);        // Equation 21\n  // likelihood\n  Y ~ normal_lpdf(mu, sigma);   // Equation 15\n}",
+    "section": "",
+    "text": "Description\nThe ARR2 prior (Kohns et al. 2024) is a global-local shrinkage prior for autoregressive models. It adapts the R2-D2 prior (Zhang et al. 2022) to the time-series setting by placing a joint prior on the autoregressive coefficients and their induced \\(R^2\\). Compared to other priors for time-series models, the ARR2 prior allows for flexible and interpretable shrinkage: the user can encode prior information about the overall explanatory power of the lagged outcomes (via \\(R^2\\)) and about the relative importance of each lag (via the simplex proportions \\(\\psi\\)).\n\n\nDefinition\nFor an AR(\\(p\\)) model:\n\\[\n\\begin{align}\ny_t &\\sim \\text{normal}(\\mu_t, \\sigma^2), \\quad t = p+1, \\dotsc, T \\\\\n\\mu_t &= \\sum_{i=1}^{p} \\phi_i \\, y_{t-i}\n\\end{align}\n\\]\nthe ARR2 prior is:\n\\[\n\\begin{align}\n\\phi_i &\\sim \\text{normal}\\!\\left(0,\\; \\frac{\\sigma^2}{\\sigma_y^2}\\,\\tau^2\\,\\psi_i\\right) \\\\[6pt]\n\\tau^2 &= \\frac{R^2}{1 - R^2} \\\\[6pt]\nR^2 &\\sim \\text{beta}(\\mu_{R^2},\\, \\varphi_{R^2}) \\\\[6pt]\n\\psi &\\sim \\text{Dirichlet}(\\xi_1, \\dotsc, \\xi_p) \\\\[6pt]\n\\sigma &\\sim p(\\sigma)\n\\end{align}\n\\]\nwhere \\(\\sigma_y^2\\) is the (unconditional) sample variance of \\(y\\).\nThe signal-to-noise ratio \\(\\tau^2 = R^2/(1-R^2)\\) reparameterizes the prior in terms of \\(R^2\\), the proportion of variance in \\(y\\) explained by the autoregressive component. The proportions \\(\\psi_i\\) lie on the simplex (\\(\\psi_i \\geq 0\\), \\(\\sum_i \\psi_i = 1\\)) and determine how the total prior variance \\(\\tau^2\\) is allocated among the \\(p\\) lag coefficients. A symmetric Dirichlet concentration \\(\\xi_i = a_\\pi\\) with \\(a_\\pi \\leq 1/2\\) favours sparsity, concentrating the explanatory power on a few lags.\nThe scaling by \\(\\sigma^2 / \\sigma_y^2\\) ensures that the prior on the AR coefficients is invariant to the units of \\(y\\): the coefficients \\(\\phi_i\\) are dimensionless (they relate \\(y_t\\) to past values of \\(y\\) in the same units), and the factor \\(\\sigma_y^2\\) normalizes the prior variance relative to the unconditional variability of the series.\n\n\nThings to specify\nPrior on \\(\\sigma\\). Hyperparameters \\(\\mu_{R^2}\\) and \\(\\varphi_{R^2}\\) (mean and precision of the \\(R^2\\) prior), and \\(\\xi_1, \\dotsc, \\xi_p\\) (Dirichlet concentration parameters for the lag-coefficient proportions).\n\n\nImplementation\n\ndata {\n  int&lt;lower=1&gt; T; // number of time points\n  vector[T] Y; // observations\n  int&lt;lower=0&gt; p; // AR order\n  // concentration vector of the Dirichlet prior\n  vector&lt;lower=0&gt;[p] cons;\n  // data for the R2D2 prior\n  real&lt;lower=0&gt; mean_R2;  // mean of the R2 prior\n  real&lt;lower=0&gt; prec_R2;  // precision of the R2 prior\n  real&lt;lower=0&gt; sigma_sd; // sd of sigma prior\n  // variance estimates of y\n  real&lt;lower=0&gt; var_y;\n}\n\nparameters {\n  vector[p] phi; // AR coefficients\n  simplex[p] psi; // decomposition simplex\n  real&lt;lower=0, upper=1&gt; R2; // coefficient of determination\n  real&lt;lower=0&gt; sigma; // observation model sd\n}\n\ntransformed parameters {\n  real&lt;lower=0&gt; tau2 = R2 / (1 - R2); // Equation 18\n  vector[T] mu = rep_vector(0.0, T);\n  for (t in (p+1):T) {\n    for (i in 1:p) {\n      mu[t] += phi[i] * Y[t-i]; // Equation 16\n    }\n  }\n}\n\nmodel {\n  // priors\n  phi ~ normal(0, sqrt(sigma^2/var_y * tau2 * psi));  // Equation 17\n  R2 ~ beta(mean_R2 * prec_R2, (1 - mean_R2) * prec_R2);  // Equation 19\n  sigma ~ normal(0, sigma_sd);  // Equation 20\n  psi ~ dirichlet(cons);        // Equation 21\n  // likelihood\n  Y ~ normal_lpdf(mu, sigma);   // Equation 15\n}\n\n\nimport numpy as np\nimport pymc as pm\nimport pytensor.tensor as pt\n\n\n# Specify the order of the autoregressive model and the observed data\np = 2\ny_data = np.array([...])  # Replace with your actual time series data\n\n# Hyperparameters for the ARR2 prior\ncons = 0.1 * np.ones(p)\nmean_R2 = 1 / 3\nprec_R2 = 3\n\n# Scale to make HalfNormal have unit variance\nHALFNORMAL_SCALE = 1 / np.sqrt(1 - 2 / np.pi)\n\nwith pm.Model() as model:\n    sigma = pm.HalfNormal(\"sigma\", HALFNORMAL_SCALE)\n\n    zb = pm.Normal(\"zb\", mu=0.0, sigma=1.0, shape=p)\n    psi = pm.Dirichlet(\"psi\", a=cons)\n    R2 = pm.Beta(\"R2\", mu=mean_R2, nu=prec_R2)\n\n    tau2 = R2 / (1 - R2)\n    phi = pm.Deterministic(\"phi\", zb * (sigma / y_data.std()) * pt.sqrt(tau2 * psi))\n\n    pm.AR(\n        \"obs\",\n        phi,\n        np.sqrt(2) * sigma,\n        init_dist=pm.Normal.dist(0, 1, shape=p),\n        observed=y_data,\n    )\n\n\n\n\n\n\nReferences\n\nKohns, David, Noa Kallioinen, Yann McLatchie, and Aki Vehtari. 2024. “The ARR2 Prior: Flexible Predictive Prior Definition for Bayesian Auto-Regressions.” Pre-published May 31. http://arxiv.org/abs/2405.19920.\n\n\nZhang, Yan Dora, Brian P. Naughton, Howard D. Bondell, and Brian J. Reich. 2022. “Bayesian Regression Using a Prior on the Model Fit: The R2-D2 Shrinkage Prior.” Journal of the American Statistical Association 117 (538): 862–74. https://doi.org/10.1080/01621459.2020.1825449.",
     "crumbs": [
       "Autoregression",
       "ARR2"

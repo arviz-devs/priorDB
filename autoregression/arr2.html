@@ -571,7 +571,7 @@ window.Quarto = {
   <li><a href="#description" id="toc-description" class="nav-link active" data-scroll-target="#description">Description</a></li>
   <li><a href="#definition" id="toc-definition" class="nav-link" data-scroll-target="#definition">Definition</a></li>
   <li><a href="#things-to-specify" id="toc-things-to-specify" class="nav-link" data-scroll-target="#things-to-specify">Things to specify</a></li>
-  <li><a href="#stan-code" id="toc-stan-code" class="nav-link" data-scroll-target="#stan-code">Stan code</a></li>
+  <li><a href="#implementation" id="toc-implementation" class="nav-link" data-scroll-target="#implementation">Implementation</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/arviz-devs/priorDB/blob/main/autoregression/arr2.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/arviz-devs/priorDB/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -585,32 +585,40 @@ window.Quarto = {
 </header>
 
 
-<section id="description" class="level2">
-<h2 class="anchored" data-anchor-id="description">Description</h2>
-<p>Developed by <span class="citation" data-cites="kohnsARR2PriorFlexible2024a">(<a href="#ref-kohnsARR2PriorFlexible2024a" role="doc-biblioref">Kohns et al. 2024</a>)</span>, it is similar to the R2-D2 prior <span class="citation" data-cites="zhangBayesianRegressionUsing2022a">(<a href="#ref-zhangBayesianRegressionUsing2022a" role="doc-biblioref">Zhang et al. 2022</a>)</span> but for autoregression.</p>
+<section id="description" class="level1">
+<h1>Description</h1>
+<p>The ARR2 prior <span class="citation" data-cites="kohnsARR2PriorFlexible2024a">(<a href="#ref-kohnsARR2PriorFlexible2024a" role="doc-biblioref">Kohns et al. 2024</a>)</span> is a global-local shrinkage prior for autoregressive models. It adapts the R2-D2 prior <span class="citation" data-cites="zhangBayesianRegressionUsing2022a">(<a href="#ref-zhangBayesianRegressionUsing2022a" role="doc-biblioref">Zhang et al. 2022</a>)</span> to the time-series setting by placing a joint prior on the autoregressive coefficients and their induced <span class="math inline">\(R^2\)</span>. Compared to other priors for time-series models, the ARR2 prior allows for flexible and interpretable shrinkage: the user can encode prior information about the overall explanatory power of the lagged outcomes (via <span class="math inline">\(R^2\)</span>) and about the relative importance of each lag (via the simplex proportions <span class="math inline">\(\psi\)</span>).</p>
 </section>
-<section id="definition" class="level2">
-<h2 class="anchored" data-anchor-id="definition">Definition</h2>
+<section id="definition" class="level1">
+<h1>Definition</h1>
+<p>For an AR(<span class="math inline">\(p\)</span>) model:</p>
 <p><span class="math display">\[
-\begin{align*}
-\phi_i &amp;\sim \text{normal}\left(0, \frac{\sigma^2}{\sigma_{y}^2}\tau^2\psi_i\right) \\
-\tau^2 &amp;= \frac{R^2}{1 - R^2} \\
-R^2 &amp;\sim \text{beta}(\mu_R,\sigma_R) \\
-\psi &amp;\sim \text{Dirichlet}(\xi_1,\dotsc,\xi_p) \\
-\sigma^2 &amp;\sim p(\sigma^2) \\
-\end{align*}
+\begin{align}
+y_t &amp;\sim \text{normal}(\mu_t, \sigma^2), \quad t = p+1, \dotsc, T \\
+\mu_t &amp;= \sum_{i=1}^{p} \phi_i \, y_{t-i}
+\end{align}
 \]</span></p>
+<p>the ARR2 prior is:</p>
+<p><span class="math display">\[
+\begin{align}
+\phi_i &amp;\sim \text{normal}\!\left(0,\; \frac{\sigma^2}{\sigma_y^2}\,\tau^2\,\psi_i\right) \\[6pt]
+\tau^2 &amp;= \frac{R^2}{1 - R^2} \\[6pt]
+R^2 &amp;\sim \text{beta}(\mu_{R^2},\, \varphi_{R^2}) \\[6pt]
+\psi &amp;\sim \text{Dirichlet}(\xi_1, \dotsc, \xi_p) \\[6pt]
+\sigma &amp;\sim p(\sigma)
+\end{align}
+\]</span></p>
+<p>where <span class="math inline">\(\sigma_y^2\)</span> is the (unconditional) sample variance of <span class="math inline">\(y\)</span>.</p>
+<p>The signal-to-noise ratio <span class="math inline">\(\tau^2 = R^2/(1-R^2)\)</span> reparameterizes the prior in terms of <span class="math inline">\(R^2\)</span>, the proportion of variance in <span class="math inline">\(y\)</span> explained by the autoregressive component. The proportions <span class="math inline">\(\psi_i\)</span> lie on the simplex (<span class="math inline">\(\psi_i \geq 0\)</span>, <span class="math inline">\(\sum_i \psi_i = 1\)</span>) and determine how the total prior variance <span class="math inline">\(\tau^2\)</span> is allocated among the <span class="math inline">\(p\)</span> lag coefficients. A symmetric Dirichlet concentration <span class="math inline">\(\xi_i = a_\pi\)</span> with <span class="math inline">\(a_\pi \leq 1/2\)</span> favours sparsity, concentrating the explanatory power on a few lags.</p>
+<p>The scaling by <span class="math inline">\(\sigma^2 / \sigma_y^2\)</span> ensures that the prior on the AR coefficients is invariant to the units of <span class="math inline">\(y\)</span>: the coefficients <span class="math inline">\(\phi_i\)</span> are dimensionless (they relate <span class="math inline">\(y_t\)</span> to past values of <span class="math inline">\(y\)</span> in the same units), and the factor <span class="math inline">\(\sigma_y^2\)</span> normalizes the prior variance relative to the unconditional variability of the series.</p>
 </section>
-<section id="things-to-specify" class="level2">
-<h2 class="anchored" data-anchor-id="things-to-specify">Things to specify</h2>
-<ul>
-<li>Prior on <span class="math inline">\(\sigma^2\)</span></li>
-<li><span class="math inline">\(\xi_1 \dotsc \xi_p\)</span> (concentration parameters corresponding to lag coefficients)</li>
-<li><span class="math inline">\(\mu_R\)</span> and <span class="math inline">\(\sigma_R\)</span> (location and precision of <span class="math inline">\(R^2\)</span> prior</li>
-</ul>
+<section id="things-to-specify" class="level1">
+<h1>Things to specify</h1>
+<p>Prior on <span class="math inline">\(\sigma\)</span>. Hyperparameters <span class="math inline">\(\mu_{R^2}\)</span> and <span class="math inline">\(\varphi_{R^2}\)</span> (mean and precision of the <span class="math inline">\(R^2\)</span> prior), and <span class="math inline">\(\xi_1, \dotsc, \xi_p\)</span> (Dirichlet concentration parameters for the lag-coefficient proportions).</p>
 </section>
-<section id="stan-code" class="level2">
-<h2 class="anchored" data-anchor-id="stan-code">Stan code</h2>
+<section id="implementation" class="level1">
+<h1>Implementation</h1>
+<div class="example stan">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; T; <span class="co">// number of time points</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[T] Y; <span class="co">// observations</span></span>
@@ -651,6 +659,43 @@ R^2 &amp;\sim \text{beta}(\mu_R,\sigma_R) \\
 <span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>  <span class="co">// likelihood</span></span>
 <span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  Y ~ normal_lpdf(mu, sigma);   <span class="co">// Equation 15</span></span>
 <span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="example pymc">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pymc <span class="im">as</span> pm</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pytensor.tensor <span class="im">as</span> pt</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify the order of the autoregressive model and the observed data</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>p <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>y_data <span class="op">=</span> np.array([...])  <span class="co"># Replace with your actual time series data</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Hyperparameters for the ARR2 prior</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>cons <span class="op">=</span> <span class="fl">0.1</span> <span class="op">*</span> np.ones(p)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>mean_R2 <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> <span class="dv">3</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>prec_R2 <span class="op">=</span> <span class="dv">3</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Scale to make HalfNormal have unit variance</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>HALFNORMAL_SCALE <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> np.sqrt(<span class="dv">1</span> <span class="op">-</span> <span class="dv">2</span> <span class="op">/</span> np.pi)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> pm.Model() <span class="im">as</span> model:</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    sigma <span class="op">=</span> pm.HalfNormal(<span class="st">"sigma"</span>, HALFNORMAL_SCALE)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    zb <span class="op">=</span> pm.Normal(<span class="st">"zb"</span>, mu<span class="op">=</span><span class="fl">0.0</span>, sigma<span class="op">=</span><span class="fl">1.0</span>, shape<span class="op">=</span>p)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    psi <span class="op">=</span> pm.Dirichlet(<span class="st">"psi"</span>, a<span class="op">=</span>cons)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    R2 <span class="op">=</span> pm.Beta(<span class="st">"R2"</span>, mu<span class="op">=</span>mean_R2, nu<span class="op">=</span>prec_R2)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    tau2 <span class="op">=</span> R2 <span class="op">/</span> (<span class="dv">1</span> <span class="op">-</span> R2)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    phi <span class="op">=</span> pm.Deterministic(<span class="st">"phi"</span>, zb <span class="op">*</span> (sigma <span class="op">/</span> y_data.std()) <span class="op">*</span> pt.sqrt(tau2 <span class="op">*</span> psi))</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    pm.AR(</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        <span class="st">"obs"</span>,</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        phi,</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        np.sqrt(<span class="dv">2</span>) <span class="op">*</span> sigma,</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        init_dist<span class="op">=</span>pm.Normal.dist(<span class="dv">0</span>, <span class="dv">1</span>, shape<span class="op">=</span>p),</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        observed<span class="op">=</span>y_data,</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 
 
 
